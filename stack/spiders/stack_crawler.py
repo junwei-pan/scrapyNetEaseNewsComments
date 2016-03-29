@@ -10,6 +10,7 @@ import re
 from scrapy import log
 from scrapy.link import Link
 from urllib2 import urlopen
+import urllib2
 
 pattern = re.compile('http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html')
 pattern2 = re.compile('http:\/\/comment\.news\.163\.com\/api\/v1\/products\/a2869674571f77b5a0867c3d71db5856\/threads\/(.*)\/comments')
@@ -24,44 +25,48 @@ class StackCrawlerSpider(CrawlSpider):
     rules = (
         Rule(
             LinkExtractor(allow = r'http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html'),
-            callback = 'parse_item',
+            callback = 'parseAllCommentUrls',
             follow = True,
             process_links = 'linkNews2linkComments',
         ),
+        Rule(
+            LinkExtractor(allow = r'http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html'),
+            callback = 'parseNews',
+            follow = True,
+        ),
     )
-    url = "http://comment.news.163.com/api/v1/products/a2869674571f77b5a0867c3d71db5856/threads/BJ96KRI20001124J/comments/newList?offset=0&limit=30&showLevelThreshold=72&headLi    mit=1&tailLimit=2&callback=getData&ibc=newspc&_=1458939446003"
-    s = urlopen(url).read()
-    print '==> s <==', s
 
     def newsID2linkComments(self, newsId, index):
         url =  "http://comment.news.163.com/api/v1/products/a2869674571f77b5a0867c3d71db5856/threads/" + newsId + "/comments/newList?offset=" + str(index) + "&limit=30&showLevelThreshold=72&headLi    mit=1&tailLimit=2&callback=getData&ibc=newspc&_=1458939446003"
         return url
     
-    def getAllCommentUrls(self, newsId):
+    def parseAllCommentUrls(self, response):
         '''
         For each newsId, get the list of all comments links.
         We can get the tatal number of comments links by the "newListSize" fields of the json data.
         '''
-        urlFirstComment = self.newsID2linkComments(newsId, 0)
-        log.msg('urlFirstComment: ' + urlFirstComment)
-        response = urlopen(urlFirstComment)
-        json_string = response.read()[9:-3]
-        print 'json_string', json_string
-        newListSize = json_string['newListSize']
-        lst_url = []
-        for i in range(newListSize / 30):
-            lst_url.append(self.newsID2linkComments(newsId, i * 30))
-        return lst_url
+        url = response.url
+        log.msg("parseAllCommentUrls")
+        log.msg("url: " + url)
+        newsId = pattern2.match(url).group(1)
+        lst_res = response.xpath('//p').extract()
+        for res in lst_res:
+            item = StackItem()
+            json_string = json.loads(res[11:-6])
+            newListSize = json_string['newListSize']
+            print 'newListSize', newListSize
+            for i in range(newListSize / 30):
+                urlNew = self.newsID2linkComments(newsId, i * 30)
+                yield Request(urlNew, callback = self.parse_item)
 
     def linkNews2linkComments(self, links):
         log.msg("linkNews2linkComments")
         ret = []
         for link in links:
             newsId = pattern.match(link.url).group(1)
-            log.msg("newsId: " + newsId)
-            ret.extend([Link(url) for url in self.getAllCommentUrls(newsId)])
+            ret.append(Link(self.newsID2linkComments(newsId, 0)))
         return ret
-    
+
     def parse_item(self, response):
         url = response.url
         log.msg("url: " + url)
@@ -93,3 +98,12 @@ class StackCrawlerSpider(CrawlSpider):
                 item['userId'] = userId
                 item['createTime'] = t['createTime']
                 yield item
+
+        def parseNews(self, response):
+            newsId = pattern2.match(url).group(1)
+            title = response.xpath('//title/text()').extract()[0]
+            keywords = response.xpath("//meta[@name='keywors']/text()").extract()[0]
+            descriptions = response.xpath("//meta[@name='description']/text()").extract()[0]
+            authors = response.xpath("//meta[@name='keywors']/text()").extract()[0]
+            Copyrights = response.xpath("//meta[@name='keywors']/text()").extract()[0]
+            content = ''.join(response.xpath("//div[@id='endText']/p/text()").extract())
