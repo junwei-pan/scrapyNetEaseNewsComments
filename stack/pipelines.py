@@ -12,10 +12,14 @@ class MongoDBPipeline(object):
             settings['MONGODB_SERVER'],
             settings['MONGODB_PORT']
         )
-        db = connection[settings['MONGODB_DB']]
-        self.collection = db[settings['MONGODB_COLLECTION']]
-
+        self.db = connection[settings['MONGODB_DB']]
+        #self.collection = db[settings['MONGODB_COLLECTION']]
+        self.dict_itemName_collectionName = {
+            'ItemComments': 'comments',
+            'ItemNews': 'newsContent',
+            }
     def process_item(self, item, spider):
+        self.collection = self.db[self.dict_itemName_collectionName[type(item).__name__]]
         valid = True
         for data in item:
             if not data:

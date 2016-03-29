@@ -17,3 +17,24 @@ class StackItem(Item):
     userId = Field()
     content = Field()
     newsId = Field()
+
+class ItemComments(Item):
+    commentId = Field()
+    against = Field()
+    createTime = Field()
+    vote = Field()
+    userLocation = Field()
+    userNickname = Field()
+    userId = Field()
+    content = Field()
+    newsId = Field()
+
+class ItemNews(Item):
+    newsId = Field()
+    url = Field()
+    title = Field()
+    keywords = Field()
+    descriptions = Field()
+    authors = Field()
+    Copyrights = Field()
+    content = Field()
