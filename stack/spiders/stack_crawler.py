@@ -12,66 +12,49 @@ from scrapy.link import Link
 from urllib2 import urlopen
 import urllib2
 
-pattern = re.compile('http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html')
+reg = "http:\/\/[a-z]*\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html"
+reg_news = "http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html"
+reg_v = "http:\/\/v\.163\.com\/paike\/[A-Z0-9]{9}/[A-Z0-9]{9}\.html"
+reg_help = "http:\/\/help\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html"
+reg_tie = "http:\/\/tie\.163\.com\/gt/\d{2}\/\d{4}\/\d{2}\/(.*)\.html"
+pattern = re.compile(reg)
 pattern2 = re.compile('http:\/\/comment\.news\.163\.com\/api\/v1\/products\/a2869674571f77b5a0867c3d71db5856\/threads\/(.*)\/comments')
 
 class StackCrawlerSpider(CrawlSpider):
     name = 'stack_crawler'
-    allowed_domains = ["comment.news.163.com", "news.163.com"]
+    #allowed_domains = ["comment.news.163.com", "news.163.com"]
     start_urls = [
         "http://news.163.com/",
     ]
 
     rules = (
         Rule(
-            LinkExtractor(allow = r'http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html'),
+            #LinkExtractor(allow = r'http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html'),
+            LinkExtractor(allow = reg_news, deny = (reg_help, reg_tie)),
             callback = 'parseAllCommentUrls',
-            follow = False,
+            follow = True,
             process_links = 'linkNews2linkComments'
         ),
     )
     '''
     Rule(
-        LinkExtractor(allow = r'http:\/\/news\.163\.com\/\d{2}\/\d{4}\/\d{2}\/(.*)\.html'),
-        callback = 'parse_news',
+        LinkExtractor(allow = r'http:\/\/.*\.163\.com\/(.*)\.html', deny = (reg_v, reg_tie)),
         follow = True,
     ),
     '''
-
     def newsID2linkComments(self, newsId, index):
         url =  "http://comment.news.163.com/api/v1/products/a2869674571f77b5a0867c3d71db5856/threads/" + newsId + "/comments/newList?offset=" + str(index) + "&limit=30&showLevelThreshold=72&headLi    mit=1&tailLimit=2&callback=getData&ibc=newspc&_=1458939446003"
         return url
     
-    def extractNewsContent(self, response):
-        url = response.url
-        log.msg("extractNewsContent: " + url)
-        newsId = pattern.match(url).group(1)
-        title = response.xpath('//title/text()').extract()[0]
-        keywords = response.xpath("//meta[@name='keywords']/@content").extract()[0]
-        descriptions = response.xpath("//meta[@name='description']/@content").extract()[0]
-        authors = response.xpath("//meta[@name='author']/@content").extract()[0]
-        Copyrights = response.xpath("//meta[@name='Copyright']/@content").extract()[0]
-        content = ''.join(response.xpath("//div[@id='endText']/p/text()").extract())
-        item = ItemNews()
-        item['newsId'] = newsId
-        item['title'] = title
-        item['keywords'] = keywords
-        item['descriptions'] = descriptions
-        item['authors'] = authors
-        item['Copyrights'] = Copyrights
-        item['content'] = content
-        yield item
-
     def parseAllCommentUrls(self, response):
         '''
-        First, we extract the content of this news page, which is done by the extractNewsContent() function
+        First, we extract the content of this news page
         Then, we generate all urls for the comments of this news, then yield request of these urls
         '''
         url = response.url
         print "url:", url
         if pattern.match(url):
             print "pattern.match(url):"
-            log.msg("extractNewsContent: " + url)
             newsId = pattern.match(url).group(1)
             title = response.xpath('//title/text()').extract()[0]
             keywords = response.xpath("//meta[@name='keywords']/@content").extract()[0]
@@ -107,8 +90,12 @@ class StackCrawlerSpider(CrawlSpider):
         for link in links:
             url = link.url
             ret.append(Link(url))
-            newsId = pattern.match(url).group(1)
-            ret.append(Link(self.newsID2linkComments(newsId, 0)))
+            log.msg("url: " + url)
+            try:
+                newsId = pattern.match(url).group(1)
+                ret.append(Link(self.newsID2linkComments(newsId, 0)))
+            except:
+                log.msg("Cannot match newsId: " + url)
         return ret
 
     def parse_item(self, response):

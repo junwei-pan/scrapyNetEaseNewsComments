@@ -18,6 +18,9 @@ class MongoDBPipeline(object):
             'ItemComments': 'comments',
             'ItemNews': 'newsContent',
             }
+        self.db['comments'].create_index([("commentId", pymongo.ASCENDING)], unique = True)
+        self.db['newsContent'].create_index([("newsId", pymongo.ASCENDING)], unique = True)
+
     def process_item(self, item, spider):
         self.collection = self.db[self.dict_itemName_collectionName[type(item).__name__]]
         valid = True

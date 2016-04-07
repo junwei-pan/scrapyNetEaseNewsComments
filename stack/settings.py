@@ -18,9 +18,9 @@ DOWNLOAD_HANDLERS = {'s3': None,}
 
 MONGODB_SERVER = "localhost"
 MONGODB_PORT = 27017
-MONGODB_DB = "netease"
+MONGODB_DB = "netease_20160401"
 MONGODB_COLLECTION = "comments"
-DOWNLOAD_DELAY = 5
+DOWNLOAD_DELAY = 2
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.93 Safari/537.36"
 #MONGODB_DB = "stackoverflow"
