@@ -1,10 +1,13 @@
 # scrapyNetEaseNewsComments 
 This is a scrapy project to crawl the comments of news from NetEase.
 
-## Requirement:
-1. mongo: sudo apt-get install mongodb-server(on Ubuntu Linux)
+## Requirement(on Ubuntu Linux):
+1. mongo: sudo apt-get install mongodb-server
 2. scrapy: pip install Scrapy==1.0.3
 3. pymongo: pip install pymongo
+4. apt-get install libxml2-dev libxslt-dev  
+5. apt-get install python-lxml
+6. apt-get install python-twisted
 
 ## Run: 
 scrapy crawl stack_crawler
