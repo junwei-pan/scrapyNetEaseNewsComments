@@ -1,5 +1,5 @@
 # scrapyNetEaseNewsComments 
-This is a scrapy project to crawl the comments of news from NetEase.
+This is a scrapy project to crawl the comments as well as contents of news from NetEase. The scraped data is stored into MongoDB.
 
 ## Requirement(on Ubuntu Linux):
 1. mongo: sudo apt-get install mongodb-server
